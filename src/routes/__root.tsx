@@ -120,13 +120,43 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const enlaces = [
+  { to: "/", texto: "Tablero" },
+  { to: "/nueva-reserva", texto: "Nueva reserva" },
+  { to: "/historial", texto: "Historial" },
+] as const;
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <CubiculosProvider>
+        <div className="min-h-screen bg-background font-sans text-foreground">
+          <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+              <Link to="/" className="text-lg font-bold tracking-tight text-primary">
+                Cubículos<span className="text-foreground">UTP</span>
+              </Link>
+            </div>
+            <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 pb-2">
+              {enlaces.map((e) => (
+                <Link
+                  key={e.to}
+                  to={e.to}
+                  activeOptions={{ exact: e.to === "/" }}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  activeProps={{ className: "bg-primary/10 text-primary" }}
+                >
+                  {e.texto}
+                </Link>
+              ))}
+            </nav>
+          </header>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
+      </CubiculosProvider>
     </QueryClientProvider>
   );
 }
