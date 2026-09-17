@@ -7,11 +7,11 @@ import {
   useCubiculos,
 } from "@/lib/cubiculos-store";
 
-type Busqueda = { cubiculo?: string };
+type Busqueda = { cubiculo: string };
 
 export const Route = createFileRoute("/nueva-reserva")({
   validateSearch: (search: Record<string, unknown>): Busqueda => ({
-    cubiculo: typeof search.cubiculo === "string" ? search.cubiculo : undefined,
+    cubiculo: typeof search["cubiculo"] === "string" ? (search["cubiculo"] as string) : "",
   }),
   head: () => ({
     meta: [
