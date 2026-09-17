@@ -39,9 +39,9 @@ function NuevaReserva() {
   const [cedula, setCedula] = useState("");
   const [nombre, setNombre] = useState("");
   const [esMusica, setEsMusica] = useState(true);
-  const [inicio, setInicio] = useState(BLOQUES[0]);
-  const [fin, setFin] = useState(BLOQUES[2]);
-  const [cubiculoId, setCubiculoId] = useState(cubiculoInicial ?? "");
+  const [inicio, setInicio] = useState<number>(7 * 60);
+  const [fin, setFin] = useState<number>(8 * 60);
+  const [cubiculoId, setCubiculoId] = useState(cubiculoInicial);
   const [notas, setNotas] = useState("");
   const [error, setError] = useState<string | null>(null);
 
