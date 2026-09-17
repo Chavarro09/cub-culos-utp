@@ -80,7 +80,7 @@ function NuevaReserva() {
       esMusica,
       inicio,
       fin,
-      notas: notas.trim() || undefined,
+      ...(notas.trim() ? { notas: notas.trim() } : {}),
     });
     navigate({ to: "/historial" });
   }
