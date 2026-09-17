@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CubiculosProvider } from "../lib/cubiculos-store";
 
 function NotFoundComponent() {
   return (
@@ -77,19 +78,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "CubículosUTP" },
+      {
+        name: "description",
+        content:
+          "Gestión del préstamo de cubículos de ensayo musical de la Universidad Tecnológica de Pereira.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -114,13 +121,43 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const enlaces = [
+  { to: "/", texto: "Tablero" },
+  { to: "/nueva-reserva", texto: "Nueva reserva" },
+  { to: "/historial", texto: "Historial" },
+] as const;
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <CubiculosProvider>
+        <div className="min-h-screen bg-background font-sans text-foreground">
+          <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+              <Link to="/" className="text-lg font-bold tracking-tight text-primary">
+                Cubículos<span className="text-foreground">UTP</span>
+              </Link>
+            </div>
+            <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 pb-2">
+              {enlaces.map((e) => (
+                <Link
+                  key={e.to}
+                  to={e.to}
+                  activeOptions={{ exact: e.to === "/" }}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  activeProps={{ className: "bg-primary/10 text-primary" }}
+                >
+                  {e.texto}
+                </Link>
+              ))}
+            </nav>
+          </header>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
+      </CubiculosProvider>
     </QueryClientProvider>
   );
 }
