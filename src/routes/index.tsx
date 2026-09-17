@@ -31,14 +31,14 @@ const estiloEstado = {
   libre: "border-estado-libre/40 bg-estado-libre/10",
   ocupado: "border-estado-ocupado/40 bg-estado-ocupado/10",
   clase: "border-estado-clase/40 bg-estado-clase/10",
-  dañado: "border-estado-dañado/40 bg-estado-dañado/10",
+  dañado: "border-estado-danado/40 bg-estado-danado/10",
 } as const;
 
 const puntoEstado = {
   libre: "bg-estado-libre",
   ocupado: "bg-estado-ocupado",
   clase: "bg-estado-clase",
-  dañado: "bg-estado-dañado",
+  dañado: "bg-estado-danado",
 } as const;
 
 const etiquetaEstado = {
