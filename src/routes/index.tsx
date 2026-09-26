@@ -59,7 +59,7 @@ function Dashboard() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-5">
       <header className="mb-5">
-        <p className="text-sm text-muted-foreground">Piso de ensayo · Facultad de Bellas Artes</p>
+        <p className="text-sm text-muted-foreground">Piso 3 · Cubículos de ensayo del CRIE</p>
         <h1 className="text-2xl font-bold tracking-tight">Tablero de cubículos</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Hora de referencia: {minutosAHora(ahora)}
