@@ -34,7 +34,7 @@ export const Route = createFileRoute("/nueva-reserva")({
 function NuevaReserva() {
   const { cubiculo: cubiculoInicial } = Route.useSearch();
   const navigate = useNavigate();
-  const { estadoDe, crearReserva, minutosUsadosHoy } = useCubiculos();
+  const { estadoDe, crearReserva, minutosUsadosHoy, reservas } = useCubiculos();
 
   const [cedula, setCedula] = useState("");
   const [nombre, setNombre] = useState("");
@@ -46,6 +46,14 @@ function NuevaReserva() {
   const [error, setError] = useState<string | null>(null);
 
   const topeMinutos = esMusica ? 240 : 120;
+
+  // Un cubículo está ocupado en el horario elegido si tiene una reserva activa que se cruza con él.
+  // 9:00–10:00 y 10:00–11:00 no se cruzan.
+  function ocupadoEnHorario(id: string) {
+    return reservas.some(
+      (r) => r.cubiculoId === id && r.estado === "activa" && r.inicio < fin && r.fin > inicio,
+    );
+  }
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +67,10 @@ function NuevaReserva() {
     }
     if (fin <= inicio) {
       setError("La hora de finalización debe ser posterior a la de inicio.");
+      return;
+    }
+    if (ocupadoEnHorario(cubiculoId)) {
+      setError("Ese cubículo ya tiene una reserva en ese horario.");
       return;
     }
     const duracion = fin - inicio;
@@ -163,8 +175,7 @@ function NuevaReserva() {
           <p className="mb-2 text-sm font-medium">Cubículo</p>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
             {CUBICULOS.map((c) => {
-              const estado = estadoDe(c);
-              const libre = estado === "libre";
+              const libre = estadoDe(c) !== "dañado" && !ocupadoEnHorario(c.id);
               const activo = cubiculoId === c.id;
               return (
                 <button
@@ -186,7 +197,7 @@ function NuevaReserva() {
             })}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Los cubículos en gris están ocupados, en clase o fuera de servicio.
+            Los cubículos en gris están fuera de servicio o ya reservados en el horario elegido.
           </p>
         </div>
 
