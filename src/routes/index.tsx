@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CATEGORIAS,
-  CUBICULOS,
   minutosAHora,
   useCubiculos,
   type Cubiculo,
@@ -49,10 +48,10 @@ const etiquetaEstado = {
 } as const;
 
 function Dashboard() {
-  const { estadoDe, reservaActiva, ahora } = useCubiculos();
+  const { estadoDe, reservaActiva, ahora, cubiculos } = useCubiculos();
 
-  const estados = CUBICULOS.map((c) => estadoDe(c));
-  const total = CUBICULOS.length;
+  const estados = cubiculos.map((c) => estadoDe(c));
+  const total = cubiculos.length;
   const disponibles = estados.filter((e) => e === "libre").length;
   const ocupados = estados.filter((e) => e === "ocupado" || e === "clase").length;
 
@@ -79,7 +78,7 @@ function Dashboard() {
               {cat}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {CUBICULOS.filter((c) => c.categoria === cat).map((c) => (
+              {cubiculos.filter((c) => c.categoria === cat).map((c) => (
                 <Tarjeta key={c.id} cubiculo={c} />
               ))}
             </div>

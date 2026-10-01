@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CUBICULOS, minutosAHora, useCubiculos, type EstadoReserva } from "@/lib/cubiculos-store";
+import { minutosAHora, useCubiculos, type EstadoReserva } from "@/lib/cubiculos-store";
 
 export const Route = createFileRoute("/historial")({
   head: () => ({
@@ -28,7 +28,7 @@ const estiloEstado: Record<EstadoReserva, string> = {
 };
 
 function Historial() {
-  const { reservas, cancelarReserva, ahora } = useCubiculos();
+  const { reservas, cancelarReserva, ahora, cubiculos } = useCubiculos();
   const [filtro, setFiltro] = useState("");
 
   const lista = reservas
@@ -54,7 +54,7 @@ function Historial() {
 
       <ul className="mt-4 space-y-3">
         {lista.map((r) => {
-          const cub = CUBICULOS.find((c) => c.id === r.cubiculoId);
+          const cub = cubiculos.find((c) => c.id === r.cubiculoId);
           const vigente = r.estado === "activa" && r.fin > ahora;
           const estadoVisible: EstadoReserva =
             r.estado === "activa" && r.fin <= ahora ? "finalizada" : r.estado;
@@ -72,7 +72,8 @@ function Historial() {
                     </span>
                   </p>
                   <p className="text-sm tabular-nums text-muted-foreground">
-                    C.C. {r.cedula} · {r.nombre}
+                    C.C. {r.cedula}
+                    {r.nombre && ` · ${r.nombre}`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {minutosAHora(r.inicio)} – {minutosAHora(r.fin)}

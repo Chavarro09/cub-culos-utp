@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   BLOQUES,
-  CUBICULOS,
   minutosAHora,
   useCubiculos,
 } from "@/lib/cubiculos-store";
@@ -34,7 +33,7 @@ export const Route = createFileRoute("/nueva-reserva")({
 function NuevaReserva() {
   const { cubiculo: cubiculoInicial } = Route.useSearch();
   const navigate = useNavigate();
-  const { estadoDe, crearReserva, minutosUsadosHoy, reservas } = useCubiculos();
+  const { estadoDe, crearReserva, minutosUsadosHoy, reservas, cubiculos } = useCubiculos();
 
   const [cedula, setCedula] = useState("");
   const [nombre, setNombre] = useState("");
@@ -174,7 +173,7 @@ function NuevaReserva() {
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <p className="mb-2 text-sm font-medium">Cubículo</p>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {CUBICULOS.map((c) => {
+            {cubiculos.map((c) => {
               const libre = estadoDe(c) !== "dañado" && !ocupadoEnHorario(c.id);
               const activo = cubiculoId === c.id;
               return (

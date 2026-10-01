@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/lib/supabase";
 
 export type Categoria = "Clavinova" | "Piano" | "Cuerdas" | "Vientos";
 export type EstadoCubiculo = "libre" | "ocupado" | "clase" | "dañado";
@@ -23,7 +24,7 @@ export type Reserva = {
   id: string;
   cubiculoId: string;
   cedula: string;
-  nombre: string;
+  nombre?: string;
   esMusica: boolean;
   inicio: number; // minutos desde medianoche
   fin: number;
@@ -34,22 +35,6 @@ export type Reserva = {
 };
 
 export const CATEGORIAS: Categoria[] = ["Clavinova", "Piano", "Cuerdas", "Vientos"];
-
-export const CUBICULOS: Cubiculo[] = [
-  { id: "c1", numero: "18A", categoria: "Clavinova" },
-  { id: "c2", numero: "19", categoria: "Clavinova" },
-  { id: "c3", numero: "20", categoria: "Clavinova" },
-  { id: "c4", numero: "21", categoria: "Clavinova" },
-  { id: "c5", numero: "27", categoria: "Piano" },
-  { id: "c6", numero: "28", categoria: "Piano" },
-  { id: "c7", numero: "29B", categoria: "Piano" },
-  { id: "c8", numero: "34", categoria: "Cuerdas" },
-  { id: "c9", numero: "35", categoria: "Cuerdas" },
-  { id: "c10", numero: "36A", categoria: "Cuerdas", fueraDeServicio: true },
-  { id: "c11", numero: "41", categoria: "Vientos" },
-  { id: "c12", numero: "42", categoria: "Vientos" },
-  { id: "c13", numero: "43", categoria: "Vientos" },
-];
 
 export function minutosAHora(min: number) {
   const h24 = Math.floor(min / 60);
@@ -72,92 +57,41 @@ function minutosAhora() {
 
 const AHORA_SEED = 10 * 60 + 20;
 
-const RESERVAS_SEED: Reserva[] = [
-  {
-    id: "r1",
-    cubiculoId: "c2",
-    cedula: "1088342119",
-    nombre: "Valentina Ospina Rendón",
-    esMusica: true,
-    inicio: AHORA_SEED - 50,
-    fin: AHORA_SEED + 70,
-    estado: "activa",
+// Fila de la tabla prestamos tal como la devuelve Supabase.
+type FilaPrestamo = {
+  id: string;
+  cubiculo_id: string;
+  cedula: string;
+  programa: "Música" | "Otra carrera";
+  inicio: string;
+  fin: string;
+  estado: EstadoReserva;
+  notas: string | null;
+};
+
+// La app trabaja en minutos desde medianoche; la base guarda fecha y hora completas.
+function aMinutos(fechaHora: string) {
+  const d = new Date(fechaHora);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function aReserva(f: FilaPrestamo): Reserva {
+  return {
+    id: f.id,
+    cubiculoId: f.cubiculo_id,
+    cedula: f.cedula,
+    esMusica: f.programa === "Música",
+    inicio: aMinutos(f.inicio),
+    fin: aMinutos(f.fin),
+    estado: f.estado,
     tipo: "estudiante",
-    notas: "Ensayo de recital de grado",
-  },
-  {
-    id: "r2",
-    cubiculoId: "c6",
-    cedula: "1004567821",
-    nombre: "Juan Esteban Marín Loaiza",
-    esMusica: false,
-    inicio: AHORA_SEED - 20,
-    fin: AHORA_SEED + 40,
-    estado: "activa",
-    tipo: "estudiante",
-  },
-  {
-    id: "r3",
-    cubiculoId: "c9",
-    cedula: "94523187",
-    nombre: "Docente Hernán Gallego",
-    esMusica: true,
-    inicio: AHORA_SEED - 80,
-    fin: AHORA_SEED + 100,
-    estado: "activa",
-    tipo: "clase",
-    docente: "Hernán Gallego",
-    notas: "Clase grupal de cuerdas frotadas",
-  },
-  {
-    id: "r4",
-    cubiculoId: "c13",
-    cedula: "1112998745",
-    nombre: "Laura Camila Betancur",
-    esMusica: true,
-    inicio: AHORA_SEED - 15,
-    fin: AHORA_SEED + 105,
-    estado: "activa",
-    tipo: "estudiante",
-  },
-  {
-    id: "r5",
-    cubiculoId: "c4",
-    cedula: "1088342119",
-    nombre: "Valentina Ospina Rendón",
-    esMusica: true,
-    inicio: 7 * 60 + 30,
-    fin: 9 * 60,
-    estado: "finalizada",
-    tipo: "estudiante",
-  },
-  {
-    id: "r6",
-    cubiculoId: "c12",
-    cedula: "10254789",
-    nombre: "Andrés Felipe Quintero",
-    esMusica: false,
-    inicio: 8 * 60,
-    fin: 9 * 60 + 30,
-    estado: "cancelada",
-    tipo: "estudiante",
-    notas: "El estudiante no se presentó",
-  },
-  {
-    id: "r7",
-    cubiculoId: "c8",
-    cedula: "1053982311",
-    nombre: "Mariana Zapata Ríos",
-    esMusica: true,
-    inicio: 9 * 60,
-    fin: 10 * 60,
-    estado: "finalizada",
-    tipo: "estudiante",
-  },
-];
+    ...(f.notas ? { notas: f.notas } : {}),
+  };
+}
 
 type Ctx = {
   ahora: number;
+  cubiculos: Cubiculo[];
   reservas: Reserva[];
   reservaActiva: (cubiculoId: string) => Reserva | undefined;
   estadoDe: (c: Cubiculo) => EstadoCubiculo;
@@ -169,8 +103,44 @@ type Ctx = {
 const StoreContext = createContext<Ctx | null>(null);
 
 export function CubiculosProvider({ children }: { children: ReactNode }) {
-  const [reservas, setReservas] = useState<Reserva[]>(RESERVAS_SEED);
+  const [cubiculos, setCubiculos] = useState<Cubiculo[]>([]);
+  const [reservas, setReservas] = useState<Reserva[]>([]);
   const [ahora, setAhora] = useState(AHORA_SEED);
+
+  // Carga los cubículos del piso 3 y los préstamos de hoy desde Supabase.
+  useEffect(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setDate(manana.getDate() + 1);
+
+    supabase
+      .from("cubiculos")
+      .select("id, numero, instrumento, fuera_de_servicio")
+      .eq("piso", 3)
+      .order("numero")
+      .then(({ data, error }) => {
+        if (error) return console.error("No se pudieron cargar los cubículos:", error.message);
+        setCubiculos(
+          data.map((c) => ({
+            id: c.id,
+            numero: c.numero,
+            categoria: c.instrumento as Categoria,
+            fueraDeServicio: c.fuera_de_servicio,
+          })),
+        );
+      });
+
+    supabase
+      .from("prestamos")
+      .select("id, cubiculo_id, cedula, programa, inicio, fin, estado, notas")
+      .gte("inicio", hoy.toISOString())
+      .lt("inicio", manana.toISOString())
+      .then(({ data, error }) => {
+        if (error) return console.error("No se pudieron cargar los préstamos:", error.message);
+        setReservas((data as FilaPrestamo[]).map(aReserva));
+      });
+  }, []);
 
   useEffect(() => {
     setAhora(minutosAhora());
@@ -224,6 +194,7 @@ export function CubiculosProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       ahora,
+      cubiculos,
       reservas,
       reservaActiva,
       estadoDe,
@@ -231,7 +202,7 @@ export function CubiculosProvider({ children }: { children: ReactNode }) {
       cancelarReserva,
       minutosUsadosHoy,
     }),
-    [ahora, reservas, reservaActiva, estadoDe, crearReserva, cancelarReserva, minutosUsadosHoy],
+    [ahora, cubiculos, reservas, reservaActiva, estadoDe, crearReserva, cancelarReserva, minutosUsadosHoy],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
