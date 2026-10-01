@@ -73,7 +73,6 @@ function Historial() {
                   </p>
                   <p className="text-sm tabular-nums text-muted-foreground">
                     C.C. {r.cedula}
-                    {r.nombre && ` · ${r.nombre}`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {minutosAHora(r.inicio)} – {minutosAHora(r.fin)}
@@ -89,7 +88,10 @@ function Historial() {
 
               {vigente && (
                 <button
-                  onClick={() => cancelarReserva(r.id)}
+                  onClick={async () => {
+                    const fallo = await cancelarReserva(r.id);
+                    if (fallo) alert(`No se pudo cancelar la reserva: ${fallo}`);
+                  }}
                   className="mt-3 w-full rounded-lg border border-estado-ocupado/50 px-3 py-2 text-sm font-semibold text-estado-ocupado transition-colors hover:bg-estado-ocupado/10"
                 >
                   Cancelar reserva

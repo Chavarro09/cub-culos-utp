@@ -36,13 +36,13 @@ function NuevaReserva() {
   const { estadoDe, crearReserva, minutosUsadosHoy, reservas, cubiculos } = useCubiculos();
 
   const [cedula, setCedula] = useState("");
-  const [nombre, setNombre] = useState("");
   const [esMusica, setEsMusica] = useState(true);
   const [inicio, setInicio] = useState<number>(7 * 60);
   const [fin, setFin] = useState<number>(8 * 60);
   const [cubiculoId, setCubiculoId] = useState(cubiculoInicial);
   const [notas, setNotas] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   const topeMinutos = esMusica ? 240 : 120;
 
@@ -54,7 +54,7 @@ function NuevaReserva() {
     );
   }
 
-  function enviar(e: React.FormEvent) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
     if (!/^\d{8,10}$/.test(cedula)) {
       setError("La cédula debe tener entre 8 y 10 dígitos.");
@@ -84,15 +84,20 @@ function NuevaReserva() {
       return;
     }
 
-    crearReserva({
+    setGuardando(true);
+    const fallo = await crearReserva({
       cubiculoId,
       cedula,
-      nombre: nombre.trim() || "Estudiante sin registrar",
       esMusica,
       inicio,
       fin,
       ...(notas.trim() ? { notas: notas.trim() } : {}),
     });
+    setGuardando(false);
+    if (fallo) {
+      setError(`No se pudo guardar el préstamo: ${fallo}`);
+      return;
+    }
     navigate({ to: "/historial" });
   }
 
@@ -112,15 +117,6 @@ function NuevaReserva() {
               onChange={(e) => setCedula(e.target.value.replace(/\D/g, "").slice(0, 10))}
               placeholder="1088342119"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base tabular-nums outline-none focus:border-ring"
-            />
-          </Campo>
-
-          <Campo etiqueta="Nombre (opcional)">
-            <input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Valentina Ospina Rendón"
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus:border-ring"
             />
           </Campo>
 
@@ -220,9 +216,10 @@ function NuevaReserva() {
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          disabled={guardando}
+          className="w-full rounded-xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
-          Registrar préstamo
+          {guardando ? "Guardando…" : "Registrar préstamo"}
         </button>
       </form>
     </div>

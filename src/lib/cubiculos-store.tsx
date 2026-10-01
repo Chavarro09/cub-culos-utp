@@ -24,7 +24,6 @@ export type Reserva = {
   id: string;
   cubiculoId: string;
   cedula: string;
-  nombre?: string;
   esMusica: boolean;
   inicio: number; // minutos desde medianoche
   fin: number;
@@ -75,6 +74,13 @@ function aMinutos(fechaHora: string) {
   return d.getHours() * 60 + d.getMinutes();
 }
 
+// Minutos desde medianoche de hoy → fecha y hora completa para guardar en la base.
+function aFechaHora(minutos: number) {
+  const d = new Date();
+  d.setHours(0, minutos, 0, 0);
+  return d.toISOString();
+}
+
 function aReserva(f: FilaPrestamo): Reserva {
   return {
     id: f.id,
@@ -95,8 +101,9 @@ type Ctx = {
   reservas: Reserva[];
   reservaActiva: (cubiculoId: string) => Reserva | undefined;
   estadoDe: (c: Cubiculo) => EstadoCubiculo;
-  crearReserva: (r: Omit<Reserva, "id" | "estado" | "tipo">) => void;
-  cancelarReserva: (id: string) => void;
+  // Devuelven un mensaje de error si la base no aceptó el cambio, o null si se guardó.
+  crearReserva: (r: Omit<Reserva, "id" | "estado" | "tipo">) => Promise<string | null>;
+  cancelarReserva: (id: string) => Promise<string | null>;
   minutosUsadosHoy: (cedula: string) => number;
 };
 
@@ -170,17 +177,31 @@ export function CubiculosProvider({ children }: { children: ReactNode }) {
     [reservaActiva],
   );
 
-  const crearReserva: Ctx["crearReserva"] = useCallback((data) => {
-    setReservas((prev) => [
-      ...prev,
-      { ...data, id: `r${Date.now()}`, estado: "activa", tipo: "estudiante" },
-    ]);
+  const crearReserva: Ctx["crearReserva"] = useCallback(async (data) => {
+    const { data: fila, error } = await supabase
+      .from("prestamos")
+      .insert({
+        cubiculo_id: data.cubiculoId,
+        cedula: data.cedula,
+        programa: data.esMusica ? "Música" : "Otra carrera",
+        inicio: aFechaHora(data.inicio),
+        fin: aFechaHora(data.fin),
+        notas: data.notas ?? null,
+      })
+      .select("id, cubiculo_id, cedula, programa, inicio, fin, estado, notas")
+      .single();
+    if (error) return error.message;
+    setReservas((prev) => [...prev, aReserva(fila as FilaPrestamo)]);
+    return null;
   }, []);
 
-  const cancelarReserva = useCallback((id: string) => {
+  const cancelarReserva: Ctx["cancelarReserva"] = useCallback(async (id) => {
+    const { error } = await supabase.from("prestamos").update({ estado: "cancelada" }).eq("id", id);
+    if (error) return error.message;
     setReservas((prev) =>
       prev.map((r) => (r.id === id ? { ...r, estado: "cancelada" } : r)),
     );
+    return null;
   }, []);
 
   const minutosUsadosHoy = useCallback(
